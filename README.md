@@ -2,6 +2,8 @@
 
 A calm, offline app with nine instruments used in yoga and meditation, for Windows and any modern browser. Browse them with `<` and `>`, play them by clicking or tapping, or let them keep playing by themselves. Every sound is synthesized live with the Web Audio API, so there are no audio files and the app needs no internet.
 
+**▶ Play it in your browser: https://rpg86x.github.io/yoga-instruments/**
+
 ![Yoga Instruments](logo.png)
 
 ## Instruments
