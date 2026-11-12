@@ -1,0 +1,759 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yoga-instrumenten</title>
+<link rel="icon" href="logo.png">
+<style>
+  :root {
+    --bg1: #0b1412; --bg2: #18332d; --text: #eef3ea; --muted: #a3b8ac;
+    --accent: #e2b66b; --panel: rgba(225, 255, 240, .06); --line: rgba(225, 255, 240, .15);
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: radial-gradient(ellipse at 50% 35%, var(--bg2), var(--bg1) 70%);
+    color: var(--text); font-family: "Segoe UI", system-ui, sans-serif;
+    display: flex; flex-direction: column; overflow: hidden; user-select: none;
+  }
+  header { position: relative; text-align: center; padding: 22px 16px 0; }
+  #lang {
+    position: absolute; right: 16px; top: 14px; z-index: 4;
+    background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 999px;
+    padding: 5px 10px; font: inherit; font-size: 13px; cursor: pointer;
+  }
+  #lang option, #lang optgroup { background: var(--bg2); color: var(--text); }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+  header h1 { margin: 0; font-weight: 300; letter-spacing: .3em; font-size: 15px; text-transform: uppercase; color: var(--muted); }
+  #stage { position: relative; flex: 1; min-height: 260px; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: pointer; touch-action: manipulation; }
+  .nav {
+    position: absolute; top: 50%; transform: translateY(-50%); z-index: 2;
+    width: 58px; height: 58px; border-radius: 50%; border: 1px solid var(--line);
+    background: var(--panel); color: var(--text); font-size: 30px; line-height: 1; cursor: pointer;
+    display: grid; place-items: center; transition: background .2s, transform .15s;
+  }
+  .nav:hover { background: rgba(225, 255, 240, .14); }
+  .nav:active { transform: translateY(-50%) scale(.92); }
+  #prev { left: max(16px, 4vw); } #next { right: max(16px, 4vw); }
+  #info { text-align: center; padding: 0 16px; }
+  #name { font-size: 30px; font-weight: 300; margin: 0; }
+  #meta { color: var(--accent); font-size: 14px; letter-spacing: .08em; margin-top: 4px; }
+  #desc { color: var(--muted); font-size: 14px; max-width: 560px; margin: 8px auto 0; min-height: 2.6em; }
+  #dots { display: flex; justify-content: center; gap: 8px; margin: 14px 0 4px; }
+  #dots button { width: 9px; height: 9px; padding: 0; border-radius: 50%; border: 0; background: var(--line); cursor: pointer; }
+  #dots button.on { background: var(--accent); transform: scale(1.3); }
+  #controls {
+    display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 12px 22px;
+    padding: 14px 16px 10px;
+  }
+  .btn {
+    border: 1px solid var(--line); background: var(--panel); color: var(--text);
+    padding: 9px 18px; border-radius: 999px; font: inherit; font-size: 14px; cursor: pointer;
+  }
+  .btn:hover { background: rgba(225, 255, 240, .14); }
+  .btn.on { background: var(--accent); color: #23180c; border-color: var(--accent); }
+  label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+  input[type=range] { width: 110px; accent-color: var(--accent); }
+  footer { display: flex; justify-content: space-between; gap: 12px; padding: 6px 16px 12px; font-size: 12px; color: var(--muted); opacity: .8; }
+  kbd { border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; font-family: inherit; }
+  #start {
+    position: absolute; inset: 0; z-index: 3; display: grid; place-items: center;
+    background: rgba(6, 10, 9, .55); backdrop-filter: blur(3px); font-size: 17px; color: var(--text); cursor: pointer;
+  }
+  #start span { border: 1px solid var(--line); background: var(--panel); padding: 14px 26px; border-radius: 999px; }
+  @media (max-width: 600px) {
+    .nav { width: 46px; height: 46px; font-size: 24px; }
+    #name { font-size: 24px; }
+    footer .keys { display: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1 data-t="app"></h1>
+  <select id="lang" aria-label="Language">
+    <option value="en">English</option>
+    <option value="nl">Nederlands</option>
+    <optgroup label="More languages">
+      <option value="de">Deutsch</option>
+      <option value="fr">Français</option>
+      <option value="es">Español</option>
+    </optgroup>
+  </select>
+</header>
+
+<div id="stage">
+  <canvas id="cv"></canvas>
+  <button class="nav" id="prev">‹</button>
+  <button class="nav" id="next">›</button>
+  <div id="start"><span data-t="start"></span></div>
+</div>
+
+<div id="info">
+  <h2 id="name"></h2>
+  <div id="meta"></div>
+  <div id="desc"></div>
+  <div id="dots"></div>
+</div>
+
+<div id="controls">
+  <button class="btn" id="play"><span data-t="play"></span> <kbd data-t="space"></kbd></button>
+  <button class="btn" id="flow"><span data-t="flow"></span> <kbd>W</kbd></button>
+  <button class="btn" id="hush"><span data-t="hush"></span> <kbd>S</kbd></button>
+  <label><span data-t="volume"></span> <input type="range" id="vol" min="0" max="1" step="0.01" value="0.8"></label>
+  <label><span data-t="reverb"></span> <input type="range" id="verb" min="0" max="1" step="0.01" value="0.45"></label>
+</div>
+
+<footer>
+  <span class="keys" data-t="keys"></span>
+  <span><a href="https://urbantechmonk.gumroad.com/coffee" target="_blank" rel="noopener" data-t="donate"></a> · <span data-t="app"></span> 1.0</span>
+</footer>
+
+<script>
+// ---------- Talen ----------
+// name, meta en desc staan in dezelfde volgorde als INSTR
+const KEYS = (or, sw, ch, tip) => `<kbd>&lt;</kbd> <kbd>&gt;</kbd> ${or} <kbd>←</kbd> <kbd>→</kbd> ${sw} · <kbd>1</kbd>–<kbd>9</kbd> ${ch} · ${tip}`;
+const LANGS = {
+  en: {
+    app: 'Yoga Instruments', prev: 'Previous instrument (< or ←)', next: 'Next instrument (> or →)', start: 'Click to open the instruments',
+    play: 'Play', space: 'space', flow: 'Keep playing', hush: 'Silence', volume: 'Volume', reverb: 'Reverb',
+    keys: KEYS('or', 'switch', 'choose', 'click or tap the instrument to play it'), donate: '☕ Buy me a coffee', more: 'More languages',
+    name: ['Gong', 'Tingsha', 'Koshi chime', 'Shruti box', 'Tanpura', 'Ocean drum', 'Rainstick', 'Kalimba', 'Frame drum'],
+    meta: ['East Asia · gong bath & savasana', 'Tibet · opening & closing', 'Pyrenees · relaxation', 'India · mantra & chanting', 'India · drone for meditation',
+      'Sound of the sea · savasana', 'Andes · grounding', 'Africa · light & playful', 'Worldwide · steady pulse'],
+    desc: [
+      'A wave of sound that slowly blooms. Strike the centre for depth, the edge for shimmer.',
+      'Two small cymbals on a leather cord. One clear, long ring to begin or end a session.',
+      'Eight tuned rods in a bamboo tube. Let the wind play them, or tap for single notes.',
+      'Bellows and reeds give one continuous, warm ground tone to sing over.',
+      'Four strings, plucked in a slow circle, with a rich buzzing glow of overtones.',
+      'Beads rolling over a drum skin sound like surf. Tap left or right to send the wave.',
+      'Turn the stick and the rain falls: a soft shower that slowly thins out.',
+      'Thumb piano with nine tines. Tap a tine, or let it wander through a gentle melody.',
+      'Centre for a deep heartbeat, edge for a light tap. Steady and grounding.',
+    ],
+  },
+  nl: {
+    app: 'Yoga-instrumenten', prev: 'Vorig instrument (< of ←)', next: 'Volgend instrument (> of →)', start: 'Klik om de instrumenten te openen',
+    play: 'Bespelen', space: 'spatie', flow: 'Laten doorspelen', hush: 'Stilte', volume: 'Volume', reverb: 'Galm',
+    keys: KEYS('of', 'wisselen', 'kiezen', 'klik of tik op het instrument om het te bespelen'), donate: '☕ Trakteer me op een koffie', more: 'Meer talen',
+    name: ['Gong', 'Tingsha', 'Koshi-klokje', 'Shruti box', 'Tanpura', 'Ocean drum', 'Regenstok', 'Kalimba', 'Framedrum'],
+    meta: ['Oost-Azië · gongbad & savasana', 'Tibet · openen & afsluiten', 'Pyreneeën · ontspanning', 'India · mantra & zang', 'India · grondtoon voor meditatie',
+      'Geluid van de zee · savasana', 'Andes · aarden', 'Afrika · licht & speels', 'Wereldwijd · gelijkmatige puls'],
+    desc: [
+      'Een golf van klank die langzaam openbloeit. Sla in het midden voor diepte, aan de rand voor glans.',
+      'Twee kleine bekkentjes aan een leren koord. Eén heldere, lange toon om een sessie te beginnen of te eindigen.',
+      'Acht gestemde staafjes in een bamboe koker. Laat de wind ze bespelen, of tik voor losse tonen.',
+      'Balg en tongen geven één doorlopende, warme grondtoon om overheen te zingen.',
+      'Vier snaren, langzaam in een kring getokkeld, met een rijke zoemende gloed van boventonen.',
+      'Kraaltjes die over een trommelvel rollen klinken als branding. Tik links of rechts om de golf te sturen.',
+      'Draai de stok om en de regen valt: een zachte bui die langzaam uitdunt.',
+      'Duimpiano met negen tongen. Tik op een tong, of laat een rustige melodie ronddwalen.',
+      'Het midden voor een diepe hartslag, de rand voor een lichte tik. Gelijkmatig en aardend.',
+    ],
+  },
+  de: {
+    app: 'Yoga-Instrumente', prev: 'Vorheriges Instrument (< oder ←)', next: 'Nächstes Instrument (> oder →)', start: 'Klicken, um die Instrumente zu öffnen',
+    play: 'Spielen', space: 'Leertaste', flow: 'Weiterspielen', hush: 'Stille', volume: 'Lautstärke', reverb: 'Hall',
+    keys: KEYS('oder', 'wechseln', 'wählen', 'auf das Instrument klicken oder tippen, um es zu spielen'), donate: '☕ Spendier mir einen Kaffee', more: 'Weitere Sprachen',
+    name: ['Gong', 'Tingsha', 'Koshi-Klangspiel', 'Shrutibox', 'Tanpura', 'Ocean Drum', 'Regenstab', 'Kalimba', 'Rahmentrommel'],
+    meta: ['Ostasien · Gongbad & Savasana', 'Tibet · Beginn & Abschluss', 'Pyrenäen · Entspannung', 'Indien · Mantra & Gesang', 'Indien · Grundton für Meditation',
+      'Klang des Meeres · Savasana', 'Anden · Erdung', 'Afrika · leicht & verspielt', 'Weltweit · gleichmäßiger Puls'],
+    desc: [
+      'Eine Klangwelle, die langsam aufblüht. In der Mitte für Tiefe anschlagen, am Rand für Schimmer.',
+      'Zwei kleine Zimbeln an einem Lederband. Ein klarer, langer Ton zum Beginn oder Abschluss einer Sitzung.',
+      'Acht gestimmte Stäbe in einem Bambusrohr. Lass den Wind spielen oder tippe für einzelne Töne.',
+      'Balg und Zungen geben einen durchgehenden, warmen Grundton, über dem man singt.',
+      'Vier Saiten, langsam im Kreis gezupft, mit einem reichen, summenden Glanz von Obertönen.',
+      'Kügelchen, die über ein Trommelfell rollen, klingen wie Brandung. Links oder rechts tippen lenkt die Welle.',
+      'Dreh den Stab um, und der Regen fällt: ein sanfter Schauer, der langsam dünner wird.',
+      'Daumenklavier mit neun Zungen. Tippe auf eine Zunge oder lass eine ruhige Melodie wandern.',
+      'Die Mitte für einen tiefen Herzschlag, der Rand für einen leichten Schlag. Gleichmäßig und erdend.',
+    ],
+  },
+  fr: {
+    app: 'Instruments de yoga', prev: 'Instrument précédent (< ou ←)', next: 'Instrument suivant (> ou →)', start: 'Cliquez pour ouvrir les instruments',
+    play: 'Jouer', space: 'espace', flow: 'Jouer en continu', hush: 'Silence', volume: 'Volume', reverb: 'Réverb',
+    keys: KEYS('ou', 'changer', 'choisir', 'cliquez ou touchez l’instrument pour en jouer'), donate: '☕ Offrez-moi un café', more: 'Autres langues',
+    name: ['Gong', 'Tingsha', 'Carillon Koshi', 'Shruti box', 'Tanpura', 'Tambour océan', 'Bâton de pluie', 'Kalimba', 'Tambour sur cadre'],
+    meta: ['Asie de l’Est · bain de gong & savasana', 'Tibet · ouverture & clôture', 'Pyrénées · relaxation', 'Inde · mantra & chant', 'Inde · bourdon pour la méditation',
+      'Son de la mer · savasana', 'Andes · ancrage', 'Afrique · léger & joueur', 'Partout · pulsation régulière'],
+    desc: [
+      'Une vague sonore qui s’épanouit lentement. Frappez au centre pour la profondeur, au bord pour l’éclat.',
+      'Deux petites cymbales sur un cordon de cuir. Un son clair et long pour ouvrir ou clore une séance.',
+      'Huit tiges accordées dans un tube de bambou. Laissez le vent en jouer, ou touchez pour une note.',
+      'Soufflet et anches donnent un bourdon continu et chaleureux sur lequel chanter.',
+      'Quatre cordes pincées lentement en boucle, avec un riche bourdonnement d’harmoniques.',
+      'Des billes roulant sur une peau de tambour évoquent le ressac. Touchez à gauche ou à droite pour diriger la vague.',
+      'Retournez le bâton et la pluie tombe : une averse douce qui s’éclaircit peu à peu.',
+      'Piano à pouces à neuf lames. Touchez une lame, ou laissez errer une mélodie paisible.',
+      'Le centre pour un battement de cœur profond, le bord pour une frappe légère. Régulier et ancrant.',
+    ],
+  },
+  es: {
+    app: 'Instrumentos de yoga', prev: 'Instrumento anterior (< o ←)', next: 'Instrumento siguiente (> o →)', start: 'Haz clic para abrir los instrumentos',
+    play: 'Tocar', space: 'espacio', flow: 'Tocar en continuo', hush: 'Silencio', volume: 'Volumen', reverb: 'Reverb',
+    keys: KEYS('o', 'cambiar', 'elegir', 'haz clic o toca el instrumento para tocarlo'), donate: '☕ Invítame a un café', more: 'Más idiomas',
+    name: ['Gong', 'Tingsha', 'Carillón Koshi', 'Shruti box', 'Tanpura', 'Tambor oceánico', 'Palo de lluvia', 'Kalimba', 'Tambor de marco'],
+    meta: ['Asia Oriental · baño de gong y savasana', 'Tíbet · apertura y cierre', 'Pirineos · relajación', 'India · mantra y canto', 'India · bordón para meditar',
+      'Sonido del mar · savasana', 'Andes · enraizamiento', 'África · ligero y juguetón', 'Todo el mundo · pulso constante'],
+    desc: [
+      'Una ola de sonido que florece lentamente. Golpea el centro para profundidad, el borde para brillo.',
+      'Dos pequeños címbalos en un cordón de cuero. Un tono claro y largo para abrir o cerrar una sesión.',
+      'Ocho varillas afinadas en un tubo de bambú. Deja que el viento las toque, o toca para notas sueltas.',
+      'Fuelle y lengüetas dan un tono base continuo y cálido sobre el que cantar.',
+      'Cuatro cuerdas, pulsadas lentamente en círculo, con un rico zumbido de armónicos.',
+      'Cuentas que ruedan sobre un parche suenan como el oleaje. Toca a la izquierda o derecha para dirigir la ola.',
+      'Gira el palo y cae la lluvia: un chaparrón suave que poco a poco se apaga.',
+      'Piano de pulgar con nueve lengüetas. Toca una lengüeta, o deja vagar una melodía tranquila.',
+      'El centro para un latido profundo, el borde para un toque ligero. Constante y enraizante.',
+    ],
+  },
+};
+
+// ---------- Voorkeuren ----------
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('yogainstr.' + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('yogainstr.' + k, JSON.stringify(v)); } catch {} },
+};
+
+// ---------- Audio ----------
+let ctx, bus, master, wet, noiseBuf, rainBuf, tanWave;
+const voices = [];          // klinkende klanken, oudste eerst
+const rnd = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+function initAudio() {
+  if (ctx) return;
+  ctx = new AudioContext();
+  master = ctx.createGain();
+  const comp = ctx.createDynamicsCompressor();
+  comp.threshold.value = -10; comp.ratio.value = 4;
+  master.connect(comp).connect(ctx.destination);
+  bus = ctx.createGain();
+  const dry = ctx.createGain(); dry.gain.value = .8;
+  bus.connect(dry).connect(master);
+  const conv = ctx.createConvolver(); conv.buffer = impulse(4.5);
+  wet = ctx.createGain();
+  bus.connect(conv).connect(wet).connect(master);
+  noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+  const nd = noiseBuf.getChannelData(0);
+  for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+  applyMix();
+}
+
+// Synthetische zaalgalm: stereo ruis die exponentieel uitsterft
+function impulse(sec) {
+  const len = Math.floor(ctx.sampleRate * sec), buf = ctx.createBuffer(2, len, ctx.sampleRate);
+  for (let c = 0; c < 2; c++) {
+    const d = buf.getChannelData(c);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3.2);
+  }
+  return buf;
+}
+
+function applyMix() {
+  if (!ctx) return;
+  master.gain.setTargetAtTime(+vol.value * .9, ctx.currentTime, .05);
+  wet.gain.setTargetAtTime(+verb.value * 1.1, ctx.currentTime, .05);
+}
+
+// Eén klank = eigen uitgang, zodat Stilte hem los kan uitfaden
+function mkVoice(dur) {
+  const now = ctx.currentTime;
+  for (let k = voices.length - 1; k >= 0; k--) if (voices[k].end < now) voices.splice(k, 1);
+  const out = ctx.createGain(); out.connect(bus);
+  const v = { out, nodes: [], end: now + dur };
+  voices.push(v);
+  while (voices.length > 14) fadeVoice(voices.shift(), .3);
+  return v;
+}
+
+function fadeVoice(v, tc) {
+  const t = ctx.currentTime;
+  v.out.gain.cancelScheduledValues(t);
+  v.out.gain.setTargetAtTime(0, t, tc);
+  v.nodes.forEach(o => { try { o.stop(t + tc * 6); } catch {} });
+}
+
+// Sinus (of andere golfvorm) met snelle aanzet en exponentieel uitsterven
+function tone(v, f, t, peak, attack, tc, dest) {
+  if (f > ctx.sampleRate / 2.2) return;
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.frequency.value = f;
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(peak, t + attack);
+  g.gain.setTargetAtTime(0, t + attack, tc);
+  o.connect(g).connect(dest || v.out);
+  o.start(t); o.stop(t + attack + tc * 8); v.nodes.push(o);
+}
+
+// Gefilterde ruis; de aanroeper bepaalt het volumeverloop via g.gain
+function noise(v, t, dur, type, freq, q, dest) {
+  const n = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+  n.buffer = noiseBuf; n.loop = true;
+  f.type = type; f.frequency.value = freq; f.Q.value = q; g.gain.value = 0;
+  n.connect(f).connect(g).connect(dest || v.out);
+  n.start(t, Math.random() * 1.5); n.stop(t + dur + .05); v.nodes.push(n);
+  return { f, g };
+}
+function burst(v, t, dur, peak, type, freq, q) {
+  const { g } = noise(v, t, dur, type, freq, q);
+  g.gain.setValueAtTime(peak, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+}
+function swell(param, t, peak, rise, end) {
+  param.setValueAtTime(.0001, t);
+  param.exponentialRampToValueAtTime(peak, t + rise);
+  param.exponentialRampToValueAtTime(.0001, t + end);
+}
+
+// Regenbuffer: honderden korte tikjes die naar het einde toe uitdunnen
+function makeRain() {
+  const sr = ctx.sampleRate, len = sr * 7, buf = ctx.createBuffer(2, len, sr);
+  for (let c = 0; c < 2; c++) {
+    const d = buf.getChannelData(c);
+    for (let n = 0; n < 520; n++) {
+      const pos = Math.floor(len * .95 * (1 - Math.sqrt(Math.random())));
+      const f = rnd(1500, 7500), amp = rnd(.05, .4), tc = sr * rnd(.0015, .005), w = 2 * Math.PI * f / sr;
+      for (let i = 0; i < tc * 6 && pos + i < len; i++) d[pos + i] += Math.sin(w * i) * Math.exp(-i / tc) * amp;
+    }
+  }
+  return buf;
+}
+
+// Tanpurasnaar: boventoonrijke golf met een glijdend filter voor de zoemende "jivari"-klank
+function pluck(v, f, t, force) {
+  if (!tanWave) {
+    const n = 40, re = new Float32Array(n), im = new Float32Array(n);
+    for (let k = 1; k < n; k++) im[k] = 1 / Math.pow(k, .75);
+    tanWave = ctx.createPeriodicWave(re, im);
+  }
+  const o = ctx.createOscillator(), bp = ctx.createBiquadFilter(), lp = ctx.createBiquadFilter();
+  const g = ctx.createGain(), gb = ctx.createGain();
+  o.setPeriodicWave(tanWave); o.frequency.value = f;
+  bp.type = 'bandpass'; bp.Q.value = 2.5;
+  bp.frequency.setValueAtTime(f * 12, t);
+  bp.frequency.exponentialRampToValueAtTime(f * 4, t + 1.4);
+  bp.frequency.exponentialRampToValueAtTime(f * 7, t + 5);
+  lp.type = 'lowpass'; lp.frequency.value = f * 3;
+  gb.gain.value = 1.6;
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.17 * force, t + .03); g.gain.setTargetAtTime(0, t + .03, 1.5);
+  o.connect(lp).connect(g); o.connect(bp).connect(gb).connect(g); g.connect(v.out);
+  o.start(t); o.stop(t + 9); v.nodes.push(o);
+}
+
+// ---------- Instrumenten ----------
+// play(x, y, force): x en y lopen van -1..1 over het instrument; x === null = standaardaanslag (spatie)
+// flow(n): de n-de stap van "laten doorspelen" → [x, y, force, seconden tot de volgende stap]
+// draw(e, t): tekent in een vlak van -100..100; e = hoe hard het instrument nu klinkt
+const GONG = [1, 1.51, 2.03, 2.48, 2.97, 3.61, 4.27, 5.12, 6.03, 7.21, 8.63, 10.4];
+const KOSHI = [440, 523.25, 659.25, 880, 987.77, 1046.5, 1318.51, 1975.53];
+const TANPURA = [98, 130.81, 130.81, 65.41];                     // Pa, Sa, Sa, lage Sa
+const KALIMBA = [261.63, 293.66, 329.63, 392, 440, 523.25, 587.33, 659.25, 783.99];
+const TINES = [7, 5, 3, 1, 0, 2, 4, 6, 8];                       // toon per tong, van links naar rechts
+let kalPos = 4, lastTine = 0;
+
+const INSTR = [
+  { id: 'gong', ring: 14,
+    play(x, y, force) {
+      const edge = x === null ? .3 : clamp(Math.hypot(x, y) / .68, 0, 1);
+      const v = mkVoice(24), t = ctx.currentTime, f0 = 62;
+      GONG.forEach((r, k) => {
+        const bloom = k ? .05 + k * .09 * (1 + edge) : .01;          // hoge boventonen zwellen later aan
+        const amp = force * .26 / (1 + k * .55) * (k ? .5 + edge * .9 : 1);
+        for (const d of [-.4, .4]) tone(v, f0 * r + d * (1 + k * .3), t, amp / 2, bloom, 4.5 / (1 + k * .32));
+      });
+      burst(v, t, .5 + edge, .09 * force, 'lowpass', 500 + edge * 1500, .7);
+    },
+    flow: () => [rnd(-.5, .5), rnd(-.5, .5), rnd(.35, .6), rnd(4, 7)],
+    draw(e, t) {
+      const sw = Math.sin(t * 2.2) * e * 2.5;
+      path([[-100, 100], [-76, 100]], '#3a2616', 9); path([[76, 100], [100, 100]], '#3a2616', 9);
+      path([[-88, 100], [-88, -92], [88, -92], [88, 100]], '#4a3120', 9);
+      path([[-40, -92], [-34 + sw, -58]], '#c9b28a', 1.5); path([[40, -92], [34 + sw, -58]], '#c9b28a', 1.5);
+      ell(sw, 0, 68, 68, RG(['#f6dc9a', '#c08a3c', '#6a431c'], sw - 20, -22, 5, 85), '#2a1a0d', 5);
+      ell(sw, 0, 46, 46, null, 'rgba(0,0,0,.22)', 1.5);
+      ell(sw, 0, 24, 24, RG(['#4a2f18', '#1d1209'], sw - 6, -6, 2, 26));
+      rings(sw, 0, 24, 66, e, t, '255,235,190');
+    } },
+  { id: 'tingsha', ring: 5,
+    play(x, y, force) {
+      const v = mkVoice(10), t = ctx.currentTime, f = 2637;
+      [[f, 0], [f * 1.012, .018]].forEach(([b, d]) =>
+        [[1, 1], [2.71, .45], [5.15, .2]].forEach(([r, a], k) => tone(v, b * r, t + d, .15 * a * force, .002, 1.6 / (1 + k * .8))));
+      burst(v, t, .03, .07 * force, 'highpass', 5000, .7);
+    },
+    flow: () => [0, 0, .8, 9],
+    draw(e, t) {
+      const sw = (1 - Math.min(1, e)) * 14 + Math.sin(t * 6) * e * 3;   // na de slag veren ze uit elkaar
+      g2.strokeStyle = '#7a5230'; g2.lineWidth = 2.5;
+      g2.beginPath(); g2.moveTo(-24 - sw, 26); g2.quadraticCurveTo(0, -170, 24 + sw, 26); g2.stroke();
+      for (const s of [-1, 1]) {
+        g2.save(); g2.translate(s * (24 + sw), 34); g2.rotate(s * 1.15);
+        ell(0, 0, 36, 11, G(['#6a431c', '#f4d38c', '#b07c3a', '#5a3716'], -36, 0, 36, 0), '#3a2412', 1);
+        ell(0, -6, 13, 7, G(['#8a5a26', '#f8dfa2', '#8a5a26'], -13, 0, 13, 0));
+        g2.restore();
+      }
+      rings(0, 34, 10, 70, e, t, '255,240,200');
+    } },
+  { id: 'koshi', ring: 4,
+    play(x, y, force) {
+      const i = x === null ? Math.floor(Math.random() * 8) : clamp(Math.floor((x + 1) * 4), 0, 7);
+      const v = mkVoice(8), t = ctx.currentTime, f = KOSHI[i];
+      tone(v, f, t, .15 * force, .004, 1.1); tone(v, f * 1.003, t, .07 * force, .004, 1.3); tone(v, f * 2.76, t, .035 * force, .003, .3);
+    },
+    flow: () => [null, 0, rnd(.35, .85), .2 + Math.random() * Math.random() * 2.2],
+    draw(e, t) {
+      const a = Math.sin(t * 1.8) * (.04 + e * .16);
+      g2.rotate(a * .3);
+      path([[0, -100], [0, -62]], '#c9b28a', 1.5);
+      rr(-26, -62, 52, 104, 10, G(['#6b4a25', '#dcb877', '#a87b3f', '#5a3c1c'], -26, 0, 26, 0));
+      rr(-27, -62, 54, 8, 4, '#3d2a14'); rr(-27, 34, 54, 8, 4, '#3d2a14');
+      ell(0, -12, 10, 10, null, 'rgba(60,35,10,.55)', 1.5); ell(0, -12, 4, 4, 'rgba(60,35,10,.55)');
+      g2.save(); g2.translate(0, 42); g2.rotate(a * 2.4);
+      path([[0, 0], [0, 36]], '#c9b28a', 1.2);
+      ell(0, 48, 14, 14, RG(['#f0d9a8', '#b98f55'], -4, 44, 2, 16), '#6b4a25', 1);
+      g2.restore();
+    } },
+  { id: 'shruti', ring: 6, floor: 66,
+    play(x, y, force) {
+      const v = mkVoice(9), t = ctx.currentTime;
+      const lp = ctx.createBiquadFilter(), g = ctx.createGain();
+      lp.type = 'lowpass'; lp.frequency.value = 1700; lp.connect(v.out);
+      g.gain.setValueAtTime(0, t); g.gain.setTargetAtTime(.2 * force, t, .5); g.gain.setTargetAtTime(0, t + 4.6, .7);
+      g.connect(lp);
+      [130.81, 196, 261.63].forEach((f, k) => {
+        for (const cents of [-4, 5]) {
+          const o = ctx.createOscillator(), og = ctx.createGain();
+          o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = cents; og.gain.value = .2 / (1 + k * .4);
+          o.connect(og).connect(g); o.start(t); o.stop(t + 9); v.nodes.push(o);
+        }
+      });
+    },
+    flow: () => [0, 0, 1, 4.4],
+    draw(e, t) {
+      const w = 20 + (Math.sin(t * 1.4) * .5 + .5) * Math.min(1, e) * 34;   // de balg ademt mee
+      g2.translate(-8 - w / 4, 0);
+      rr(-70, -45, 95, 100, 6, G(['#8a5527', '#b0763c', '#6b3f1c'], 0, -45, 0, 55));
+      rr(-64, -38, 83, 30, 3, 'rgba(0,0,0,.25)');
+      for (let k = 0; k < 7; k++) rr(-61 + k * 11.5, -35, 8, 24, 2, k % 3 ? '#e8d7b0' : '#c9b28a');
+      const fw = w / 5;
+      for (let k = 0; k < 5; k++) {
+        const x0 = 25 + k * fw;
+        g2.fillStyle = k % 2 ? '#34343c' : '#24242a';
+        g2.beginPath(); g2.moveTo(x0, -45); g2.lineTo(x0 + fw / 2, -39); g2.lineTo(x0 + fw, -45);
+        g2.lineTo(x0 + fw, 55); g2.lineTo(x0 + fw / 2, 49); g2.lineTo(x0, 55); g2.fill();
+      }
+      rr(25 + w, -45, 8, 100, 3, '#6b3f1c');
+    } },
+  { id: 'tanpura', ring: 5,
+    play(x, y, force) {
+      const v = mkVoice(12), t = ctx.currentTime;
+      if (x === null) TANPURA.forEach((f, k) => pluck(v, f, t + k * 1.05, force));
+      else pluck(v, TANPURA[clamp(Math.floor((x + .4) / .8 * 4), 0, 3)], t, force);
+    },
+    flow: () => [null, 0, .9, 4.2],
+    draw(e, t) {
+      rr(-9, -100, 18, 122, 4, G(['#5a3317', '#8f5a2a', '#4a2a12'], -9, 0, 9, 0));
+      for (const y of [-93, -83]) path([[-19, y], [19, y]], '#2a180b', 5);
+      ell(0, 48, 52, 52, RG(['#e6a860', '#a8622a', '#5c3212'], -16, 28, 5, 64));
+      ell(0, 44, 40, 42, RG(['#dcae6c', '#b07a3a'], 0, 40, 5, 46), 'rgba(60,30,10,.5)', 1);
+      rr(-11, 6, 22, 6, 2, '#e2b66b'); rr(-14, 54, 28, 7, 2, '#f1e6cf');
+      g2.strokeStyle = 'rgba(245,235,205,.9)'; g2.lineWidth = .9;
+      for (let k = 0; k < 4; k++) {
+        const x = -6 + k * 4, vib = Math.sin(t * 45 + k * 2) * Math.min(1, e) * 1.6;
+        g2.beginPath(); g2.moveTo(x, -88); g2.quadraticCurveTo(x + vib, -15, x, 56); g2.stroke();
+      }
+    } },
+  { id: 'ocean', ring: 6,
+    play(x, y, force) {
+      const v = mkVoice(9), t = ctx.currentTime, dir = x === null ? (Math.random() < .5 ? -1 : 1) : (x < 0 ? -1 : 1);
+      const pan = ctx.createStereoPanner();
+      pan.pan.setValueAtTime(-dir * .7, t); pan.pan.linearRampToValueAtTime(dir * .7, t + 7); pan.connect(v.out);
+      const a = noise(v, t, 8.2, 'lowpass', 300, .5, pan), b = noise(v, t, 8.2, 'bandpass', 5200, .7, pan);
+      a.f.frequency.setValueAtTime(300, t); a.f.frequency.exponentialRampToValueAtTime(2400, t + 2.6); a.f.frequency.exponentialRampToValueAtTime(320, t + 7.5);
+      swell(a.g.gain, t, .42 * force, 2.6, 8); swell(b.g.gain, t, .06 * force, 2.9, 6);
+    },
+    flow: (n) => [n % 2 ? 1 : -1, 0, rnd(.7, 1), rnd(5.5, 7)],
+    draw(e, t) {
+      const tilt = Math.sin(t * .9) * Math.min(1, e);
+      ell(0, 0, 82, 82, G(['#7a5230', '#4a2f18'], 0, -82, 0, 82));
+      ell(0, 0, 74, 74, RG(['#9bd8e6', '#3e8fb0', '#1c4f70'], -22, -26, 5, 95));
+      g2.fillStyle = 'rgba(240,240,228,.92)';
+      for (let k = 0; k < 70; k++) {
+        const a = k * 2.399, r = 68 * Math.sqrt((k + .5) / 70);
+        let x = Math.cos(a) * r * (1 - Math.abs(tilt) * .35) + tilt * 30, y = Math.sin(a) * r + Math.abs(tilt) * 8;
+        const d = Math.hypot(x, y); if (d > 69) { x *= 69 / d; y *= 69 / d; }
+        g2.beginPath(); g2.arc(x, y, 2.1, 0, 7); g2.fill();
+      }
+      g2.strokeStyle = 'rgba(255,255,255,.35)'; g2.lineWidth = 3;
+      g2.beginPath(); g2.arc(0, 0, 66, Math.PI * 1.1, Math.PI * 1.45); g2.stroke();
+    } },
+  { id: 'rain', ring: 6,
+    play(x, y, force) {
+      if (!rainBuf) rainBuf = makeRain();
+      const v = mkVoice(9), n = ctx.createBufferSource(), g = ctx.createGain();
+      n.buffer = rainBuf; n.playbackRate.value = rnd(.85, 1.15); g.gain.value = .55 * force;
+      n.connect(g).connect(v.out); n.start(); v.nodes.push(n);
+    },
+    flow: () => [0, 0, rnd(.7, 1), 6],
+    draw(e, t) {
+      for (let k = 0; k < 14; k++) {
+        const p = (t * .9 + k / 14) % 1;
+        g2.fillStyle = `rgba(190,225,240,${(1 - p) * Math.min(1, e) * .8})`;
+        g2.beginPath(); g2.arc(-75 + (k * 47) % 150, 22 + p * 62, 1.8, 0, 7); g2.fill();
+      }
+      g2.rotate(-.3 + Math.min(1, e) * .22);
+      rr(-96, -11, 192, 22, 11, G(['#6a4a22', '#cfa96c', '#8a6431', '#4a3114'], 0, -11, 0, 11));
+      [[-72, '#2c6d78'], [-62, '#b5531c'], [-52, '#2c6d78'], [52, '#2c6d78'], [62, '#b5531c'], [72, '#2c6d78']]
+        .forEach(([x, c]) => rr(x - 3, -11, 6, 22, 0, c));
+      path([[-30, 0], [-15, -5], [0, 0], [15, 5], [30, 0]], 'rgba(60,35,10,.5)', 1.5);
+    } },
+  { id: 'kalimba', ring: 1.6, floor: 88,
+    play(x, y, force) {
+      let i;
+      if (x === null) { kalPos = clamp(kalPos + [-2, -1, 1, 2][Math.floor(Math.random() * 4)], 0, 8); i = kalPos; }
+      else i = kalPos = TINES[clamp(Math.round((x * 100 + 44) / 11), 0, 8)];
+      lastTine = i;
+      const v = mkVoice(4), t = ctx.currentTime, f = KALIMBA[i];
+      tone(v, f, t, .3 * force, .003, .45); tone(v, f * 2, t, .06 * force, .003, .25); tone(v, f * 5.4, t, .07 * force, .002, .03);
+      burst(v, t, .012, .05 * force, 'bandpass', 3000, 1);
+    },
+    flow: () => [null, 0, rnd(.5, .85), [.3, .6, .6, .9][Math.floor(Math.random() * 4)]],
+    draw(e, t) {
+      rr(-56, -76, 112, 152, 16, G(['#bd7d3c', '#8f5a2a', '#6b3f1c'], 0, -76, 0, 76));
+      ell(0, 36, 17, 17, '#1d1209'); rr(-49, -56, 98, 6, 2, '#cfd3d6');
+      TINES.forEach((i, p) => {
+        const x = -44 + p * 11, len = 92 - i * 6, on = i === lastTine ? Math.min(1, e) : 0;
+        path([[x, -66], [x + Math.sin(t * 70) * on * 1.6, -66 + len]], on > .05 ? `rgb(${226 + on * 20},${214 - on * 20},${190 - on * 80})` : '#d5dade', 7);
+      });
+    } },
+  { id: 'drum', ring: 1.1,
+    play(x, y, force) {
+      const edge = x === null ? 0 : clamp(Math.hypot(x, y) / .74, 0, 1), tak = edge > .6;
+      const v = mkVoice(3), t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain();
+      o.frequency.setValueAtTime(tak ? 330 : 150, t); o.frequency.exponentialRampToValueAtTime(tak ? 215 : 68, t + (tak ? .04 : .09));
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime((tak ? .32 : .7) * force, t + .003); g.gain.setTargetAtTime(0, t + .003, tak ? .07 : .26);
+      o.connect(g).connect(v.out); o.start(t); o.stop(t + 2.5); v.nodes.push(o);
+      tone(v, tak ? 520 : 108, t, (tak ? .08 : .14) * force, .002, tak ? .05 : .14);
+      burst(v, t, tak ? .07 : .05, (tak ? .22 : .1) * force, tak ? 'bandpass' : 'lowpass', tak ? 2600 : 420, 1);
+    },
+    flow: (n) => n % 2 ? [0, 0, .55, .88] : [0, 0, 1, .32],        // hartslag: boem-boem … boem-boem
+    draw(e, t) {
+      ell(0, 0, 82, 82, G(['#7a4a22', '#4a2a12'], 0, -82, 0, 82));
+      ell(0, 0, 73, 73, RG(['#f5e9cf', '#dcc8a0', '#a88f65'], -16, -22, 5, 95));
+      g2.fillStyle = '#2a180b';
+      for (let k = 0; k < 18; k++) { g2.beginPath(); g2.arc(Math.cos(k * .349) * 77.5, Math.sin(k * .349) * 77.5, 1.8, 0, 7); g2.fill(); }
+      rings(0, 0, 4, 70, e, t * 3, '120,90,50');
+      const d = Math.min(1, e) * 10;
+      path([[72, 96], [30 - d, 40 - d]], '#6b3f1c', 5);
+      ell(27 - d, 36 - d, 10, 10, RG(['#ffffff', '#cfc5b2'], 24 - d, 33 - d, 1, 11));
+    } },
+];
+
+// ---------- Tekenhulpjes ----------
+const cv = document.getElementById('cv'), g2 = cv.getContext('2d');
+let W = 0, H = 0, DPR = 1, layout = null;
+
+function stops(g, cols) { cols.forEach((c, i) => g.addColorStop(i / (cols.length - 1), c)); return g; }
+const G = (cols, x0, y0, x1, y1) => stops(g2.createLinearGradient(x0, y0, x1, y1), cols);
+const RG = (cols, x, y, r0, r1) => stops(g2.createRadialGradient(x, y, r0, x, y, r1), cols);
+function paint(fill, stroke, lw) {
+  if (fill) { g2.fillStyle = fill; g2.fill(); }
+  if (stroke) { g2.strokeStyle = stroke; g2.lineWidth = lw; g2.stroke(); }
+}
+function ell(x, y, rx, ry, fill, stroke, lw) { g2.beginPath(); g2.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); paint(fill, stroke, lw); }
+function rr(x, y, w, h, r, fill) { g2.beginPath(); g2.roundRect(x, y, w, h, r); paint(fill); }
+function path(pts, stroke, lw) { g2.beginPath(); pts.forEach(([x, y], k) => k ? g2.lineTo(x, y) : g2.moveTo(x, y)); paint(null, stroke, lw); }
+// Uitdijende klankringen
+function rings(x, y, r0, r1, e, t, rgb) {
+  if (e < .01) return;
+  for (let k = 0; k < 4; k++) {
+    const p = (t * .45 + k / 4) % 1;
+    ell(x, y, r0 + (r1 - r0) * p, r0 + (r1 - r0) * p, null, `rgba(${rgb},${(1 - p) * Math.min(1, e) * .5})`, 1.4);
+  }
+}
+
+function resize() {
+  DPR = window.devicePixelRatio || 1;
+  W = cv.clientWidth; H = cv.clientHeight;
+  cv.width = W * DPR; cv.height = H * DPR;
+}
+
+// ---------- Navigatie en spelen ----------
+const N = INSTR.length;
+const mod = (k) => ((k % N) + N) % N;
+let target = store.get('instr', 0);         // onbegrensde index, zodat de carrousel rond kan draaien
+let pos = target;
+const energy = new Array(N).fill(0);
+let flow = null;                            // instrument dat nu vanzelf doorspeelt
+
+function hit(i, x = null, y = 0, force = 1) {
+  initAudio();
+  INSTR[i].play(x, y, force);
+  energy[i] = Math.min(1.25, energy[i] + force * .9);
+}
+
+function startFlow(i) {
+  stopFlow();
+  flow = { i, n: 0 };
+  flowBtn.classList.add('on');
+  flowTick();
+}
+function flowTick() {
+  if (!flow) return;
+  const [x, y, force, wait] = INSTR[flow.i].flow(flow.n++);
+  hit(flow.i, x, y, force);
+  flow.timer = setTimeout(flowTick, wait * 1000);
+}
+function stopFlow() {
+  if (!flow) return;
+  clearTimeout(flow.timer);
+  flow = null;
+  flowBtn.classList.remove('on');
+}
+
+function hush() {
+  stopFlow();
+  if (!ctx) return;
+  while (voices.length) fadeVoice(voices.shift(), .35);
+  for (let k = 0; k < N; k++) energy[k] = Math.min(energy[k], .2);
+}
+
+function go(step) {
+  stopFlow();
+  target += step;
+  showInfo();
+}
+function jump(i) {
+  const d = mod(i - target);
+  go(d > N / 2 ? d - N : d);
+}
+function current() { return mod(target); }
+
+function showInfo() {
+  const i = current(), t = LANGS[lang];
+  nameEl.textContent = t.name[i];
+  metaEl.textContent = t.meta[i];
+  descEl.textContent = t.desc[i];
+  [...dotsEl.children].forEach((d, k) => d.classList.toggle('on', k === i));
+  store.set('instr', i);
+}
+
+// Eerste keer: taal van de browser als we die hebben, anders Engels
+let lang = store.get('lang', null);
+if (!LANGS[lang]) lang = (navigator.languages || [navigator.language]).map(l => (l || '').slice(0, 2)).find(l => LANGS[l]) || 'en';
+
+function applyLang() {
+  const t = LANGS[lang];
+  document.documentElement.lang = lang;
+  document.title = t.app;
+  document.querySelectorAll('[data-t]').forEach(el => {
+    if (el.dataset.t === 'keys') el.innerHTML = t.keys; else el.textContent = t[el.dataset.t];
+  });
+  document.getElementById('prev').title = t.prev;
+  document.getElementById('next').title = t.next;
+  document.querySelector('#lang optgroup').label = t.more;
+  [...dotsEl.children].forEach((d, k) => { d.title = `${k + 1}. ${t.name[k]}`; });
+  langEl.value = lang;
+  showInfo();
+}
+
+// ---------- Tekenlus ----------
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(.1, (now - last) / 1000); last = now;
+  const time = now / 1000;
+  pos += (target - pos) * Math.min(1, dt * 7);
+  if (Math.abs(target - pos) < .001) pos = target;
+  for (let k = 0; k < N; k++) energy[k] *= Math.exp(-dt / (INSTR[k].ring / 4));
+
+  g2.setTransform(DPR, 0, 0, DPR, 0, 0);
+  g2.clearRect(0, 0, W, H);
+  const base = Math.min(W * .2, H * .42), spacing = Math.max(base * 3, W * .38), cy = H * .5;
+  const order = [];
+  for (let k = Math.round(pos) - 2; k <= Math.round(pos) + 2; k++) order.push(k);
+  order.sort((a, b) => Math.abs(b - pos) - Math.abs(a - pos)); // dichtstbijzijnde als laatste
+  layout = null;
+  for (const k of order) {
+    const d = k - pos, ad = Math.abs(d);
+    if (ad > 2.2) continue;
+    const i = mod(k), e = energy[i];
+    const R = base * (1 - Math.min(ad, 1.5) * .38), cx = W / 2 + d * spacing;
+    g2.save();
+    g2.translate(cx, cy); g2.scale(R / 100, R / 100);
+    g2.globalAlpha = Math.max(0, 1 - ad * .62);
+    g2.lineCap = 'round'; g2.lineJoin = 'round';
+    if (e > .01) { g2.fillStyle = RG([`rgba(255,215,150,${.2 * Math.min(1, e)})`, 'rgba(255,215,150,0)'], 0, 0, 20, 190); g2.fillRect(-200, -200, 400, 400); }
+    ell(0, INSTR[i].floor || 106, 72, 7, 'rgba(0,0,0,.35)');
+    INSTR[i].draw(e, time);
+    g2.restore();
+    if (ad < .5) layout = { cx, cy, R };
+  }
+  requestAnimationFrame(frame);
+}
+
+// ---------- Bediening ----------
+const nameEl = document.getElementById('name'), metaEl = document.getElementById('meta');
+const descEl = document.getElementById('desc'), dotsEl = document.getElementById('dots');
+const vol = document.getElementById('vol'), verb = document.getElementById('verb');
+const flowBtn = document.getElementById('flow'), startEl = document.getElementById('start');
+const langEl = document.getElementById('lang');
+
+INSTR.forEach((b, k) => {
+  const d = document.createElement('button');
+  d.onclick = () => jump(k);
+  dotsEl.appendChild(d);
+});
+langEl.onchange = () => { lang = langEl.value; store.set('lang', lang); applyLang(); langEl.blur(); };
+vol.value = store.get('vol', .8); verb.value = store.get('verb', .45);
+vol.oninput = () => { applyMix(); store.set('vol', +vol.value); };
+verb.oninput = () => { applyMix(); store.set('verb', +verb.value); };
+
+function unlock() {
+  initAudio();
+  if (ctx.state === 'suspended') ctx.resume();
+  startEl.remove();
+}
+function toggleFlow() { unlock(); flow ? stopFlow() : startFlow(current()); }
+startEl.onclick = unlock;
+
+document.getElementById('prev').onclick = () => go(-1);
+document.getElementById('next').onclick = () => go(1);
+document.getElementById('play').onclick = () => { unlock(); hit(current()); };
+flowBtn.onclick = toggleFlow;
+document.getElementById('hush').onclick = hush;
+
+// Klik of tik op het instrument: de plek bepaalt de klank
+cv.addEventListener('pointerdown', (ev) => {
+  unlock();
+  if (!layout) return;
+  const r = cv.getBoundingClientRect();
+  const x = (ev.clientX - r.left - layout.cx) / layout.R, y = (ev.clientY - r.top - layout.cy) / layout.R;
+  if (Math.abs(x) > 1.1 || Math.abs(y) > 1.1) return;
+  hit(current(), x, y);
+});
+
+document.addEventListener('keydown', (ev) => {
+  if ((ev.target.tagName === 'INPUT' || ev.target.tagName === 'SELECT') && ev.key.startsWith('Arrow')) return;
+  const k = ev.key;
+  if (k === 'ArrowLeft' || k === '<' || k === ',') go(-1);
+  else if (k === 'ArrowRight' || k === '>' || k === '.') go(1);
+  else if (k === ' ' || k === 'Enter') { unlock(); if (!ev.repeat) hit(current()); }
+  else if (k === 'w' || k === 'W') { if (!ev.repeat) toggleFlow(); }
+  else if (k === 's' || k === 'S') hush();
+  else if (/^[1-9]$/.test(k) && +k <= N) jump(+k - 1);
+  else return;
+  ev.preventDefault();
+});
+
+window.addEventListener('resize', resize);
+resize();
+applyLang();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
