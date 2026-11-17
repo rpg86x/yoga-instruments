@@ -1,4 +1,4 @@
-# Yoga Instruments 1.1
+# Yoga Instruments 1.2
 
 A calm, offline app with nine instruments used in yoga and meditation, for Windows and any modern browser. Browse them with `<` and `>`, play them by clicking or tapping, or let them keep playing by themselves. Every sound is synthesized live with the Web Audio API, so there are no audio files and the app needs no internet.
 
@@ -60,3 +60,11 @@ Een rustige app met negen yoga- en meditatie-instrumenten die zonder internet we
 ## License
 
 MIT, see [LICENSE](LICENSE).
+
+
+## What's new in 1.2
+
+- **Kalimba with 17 tines** (C4–E6, the common 17-key layout: lowest note in the middle, alternating left and right).
+- **Practice songs from [Song Library](https://github.com/rpg86x/song-library):** on the kalimba, pick a song and press **▶ Listen** or **🎯 Practice**. In practice mode the tine to tap glows **red** (the next one light red) and mistakes are counted. 132 of the 133 songs fit the kalimba.
+- Song Library can open a song here directly: `index.html?song=<id>&mode=practice|listen`.
+- **Android app** (`android/build.ps1`), so Song Library can open the kalimba on a tablet. Keep `songs.js` next to `index.html`.

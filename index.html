@@ -79,6 +79,14 @@
     #stage { min-height: 180px; }
     #controls { gap: 10px 14px; padding: 10px 12px 6px; }
   }
+  /* Liedjes op de kalimba (Song Library) */
+  #songBar { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; padding: 8px 16px 0; }
+  #songBar[hidden] { display: none; }
+  #songSel { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 999px; padding: 7px 12px; font: inherit; font-size: 14px; max-width: 60vw; }
+  #songSel option, #songSel optgroup { background: var(--bg2); }
+  #songBar .btn.on { background: rgba(255, 77, 77, .25); border-color: #ff4d4d; }
+  #songStatus { min-width: 140px; font-size: 13px; color: var(--muted); text-align: center; }
+  #songStatus.good { color: #8fd3b0; } #songStatus.bad { color: #ff7a7a; }
 </style>
 </head>
 <body>
@@ -109,6 +117,14 @@
   <div id="dots"></div>
 </div>
 
+<div id="songBar" hidden>
+  <select id="songSel"></select>
+  <button class="btn" id="songListen"></button>
+  <button class="btn" id="songPractice"></button>
+  <button class="btn" id="songStop">■</button>
+  <span id="songStatus"></span>
+</div>
+
 <div id="controls">
   <button class="btn" id="play"><span data-t="play"></span> <kbd data-t="space"></kbd></button>
   <button class="btn" id="flow"><span data-t="flow"></span> <kbd>W</kbd></button>
@@ -119,15 +135,17 @@
 
 <footer>
   <span class="keys" data-t="keys"></span>
-  <span><a href="https://urbantechmonk.gumroad.com/coffee" target="_blank" rel="noopener" data-t="donate"></a> · <span data-t="app"></span> 1.1</span>
+  <span><a href="https://urbantechmonk.gumroad.com/coffee" target="_blank" rel="noopener" data-t="donate"></a> · <span data-t="app"></span> 1.2</span>
 </footer>
 
+<script src="songs.js"></script>
 <script>
 // ---------- Talen ----------
 // name, meta en desc staan in dezelfde volgorde als INSTR
 const KEYS = (or, sw, ch, tip) => `<kbd>&lt;</kbd> <kbd>&gt;</kbd> ${or} <kbd>←</kbd> <kbd>→</kbd> ${sw} · <kbd>1</kbd>–<kbd>9</kbd> ${ch} · ${tip}`;
 const LANGS = {
   en: {
+    song: { listen: '▶ Listen', practice: '🎯 Practice', stop: 'Stop song', note: 'Note', of: 'of', done: 'Well done! Mistakes:', miss: 'Not that one: tap the red tine', pick: 'Kalimba: pick a song to listen or practice', nofit: 'This song does not fit the kalimba' },
     app: 'Yoga Instruments', prev: 'Previous instrument (< or ←)', next: 'Next instrument (> or →)', start: 'Click to open the instruments',
     play: 'Play', space: 'space', flow: 'Keep playing', hush: 'Silence', volume: 'Volume', reverb: 'Reverb',
     keys: KEYS('or', 'switch', 'choose', 'click or tap the instrument to play it'), donate: '☕ Buy me a coffee', more: 'More languages',
@@ -142,11 +160,12 @@ const LANGS = {
       'Four strings, plucked in a slow circle, with a rich buzzing glow of overtones.',
       'Beads rolling over a drum skin sound like surf. Tap left or right to send the wave.',
       'Turn the stick and the rain falls: a soft shower that slowly thins out.',
-      'Thumb piano with nine tines. Tap a tine, or let it wander through a gentle melody.',
+      'Thumb piano with 17 tines in C. Tap a tine, let a gentle melody wander, or practice a song from the Song Library.',
       'Centre for a deep heartbeat, edge for a light tap. Steady and grounding.',
     ],
   },
   nl: {
+    song: { listen: '▶ Voorspelen', practice: '🎯 Oefenen', stop: 'Liedje stoppen', note: 'Noot', of: 'van', done: 'Goed gedaan! Fouten:', miss: 'Niet die: tik op de rode tong', pick: 'Kalimba: kies een liedje om te luisteren of te oefenen', nofit: 'Dit liedje past niet op de kalimba' },
     app: 'Yoga-instrumenten', prev: 'Vorig instrument (< of ←)', next: 'Volgend instrument (> of →)', start: 'Klik om de instrumenten te openen',
     play: 'Bespelen', space: 'spatie', flow: 'Laten doorspelen', hush: 'Stilte', volume: 'Volume', reverb: 'Galm',
     keys: KEYS('of', 'wisselen', 'kiezen', 'klik of tik op het instrument om het te bespelen'), donate: '☕ Trakteer me op een koffie', more: 'Meer talen',
@@ -161,11 +180,12 @@ const LANGS = {
       'Vier snaren, langzaam in een kring getokkeld, met een rijke zoemende gloed van boventonen.',
       'Kraaltjes die over een trommelvel rollen klinken als branding. Tik links of rechts om de golf te sturen.',
       'Draai de stok om en de regen valt: een zachte bui die langzaam uitdunt.',
-      'Duimpiano met negen tongen. Tik op een tong, of laat een rustige melodie ronddwalen.',
+      'Duimpiano met 17 tongen in C. Tik op een tong, laat een rustige melodie ronddwalen of oefen een liedje uit de Song Library.',
       'Het midden voor een diepe hartslag, de rand voor een lichte tik. Gelijkmatig en aardend.',
     ],
   },
   de: {
+    song: { listen: '▶ Vorspielen', practice: '🎯 Üben', stop: 'Lied stoppen', note: 'Note', of: 'von', done: 'Gut gemacht! Fehler:', miss: 'Nicht diese: tippe auf die rote Zunge', pick: 'Kalimba: wähle ein Lied zum Anhören oder Üben', nofit: 'Dieses Lied passt nicht auf die Kalimba' },
     app: 'Yoga-Instrumente', prev: 'Vorheriges Instrument (< oder ←)', next: 'Nächstes Instrument (> oder →)', start: 'Klicken, um die Instrumente zu öffnen',
     play: 'Spielen', space: 'Leertaste', flow: 'Weiterspielen', hush: 'Stille', volume: 'Lautstärke', reverb: 'Hall',
     keys: KEYS('oder', 'wechseln', 'wählen', 'auf das Instrument klicken oder tippen, um es zu spielen'), donate: '☕ Spendier mir einen Kaffee', more: 'Weitere Sprachen',
@@ -180,11 +200,12 @@ const LANGS = {
       'Vier Saiten, langsam im Kreis gezupft, mit einem reichen, summenden Glanz von Obertönen.',
       'Kügelchen, die über ein Trommelfell rollen, klingen wie Brandung. Links oder rechts tippen lenkt die Welle.',
       'Dreh den Stab um, und der Regen fällt: ein sanfter Schauer, der langsam dünner wird.',
-      'Daumenklavier mit neun Zungen. Tippe auf eine Zunge oder lass eine ruhige Melodie wandern.',
+      'Daumenklavier mit 17 Zungen in C. Tippe auf eine Zunge, lass eine ruhige Melodie wandern oder übe ein Lied aus der Song Library.',
       'Die Mitte für einen tiefen Herzschlag, der Rand für einen leichten Schlag. Gleichmäßig und erdend.',
     ],
   },
   fr: {
+    song: { listen: '▶ Écouter', practice: '🎯 S\'exercer', stop: 'Arrêter', note: 'Note', of: 'sur', done: 'Bravo ! Erreurs :', miss: 'Pas celle-là : touchez la lame rouge', pick: 'Kalimba : choisissez une chanson à écouter ou à travailler', nofit: 'Cette chanson ne tient pas sur le kalimba' },
     app: 'Instruments de yoga', prev: 'Instrument précédent (< ou ←)', next: 'Instrument suivant (> ou →)', start: 'Cliquez pour ouvrir les instruments',
     play: 'Jouer', space: 'espace', flow: 'Jouer en continu', hush: 'Silence', volume: 'Volume', reverb: 'Réverb',
     keys: KEYS('ou', 'changer', 'choisir', 'cliquez ou touchez l’instrument pour en jouer'), donate: '☕ Offrez-moi un café', more: 'Autres langues',
@@ -199,11 +220,12 @@ const LANGS = {
       'Quatre cordes pincées lentement en boucle, avec un riche bourdonnement d’harmoniques.',
       'Des billes roulant sur une peau de tambour évoquent le ressac. Touchez à gauche ou à droite pour diriger la vague.',
       'Retournez le bâton et la pluie tombe : une averse douce qui s’éclaircit peu à peu.',
-      'Piano à pouces à neuf lames. Touchez une lame, ou laissez errer une mélodie paisible.',
+      'Piano à pouces à 17 lames en do. Touchez une lame, laissez errer une mélodie paisible ou travaillez une chanson de la Song Library.',
       'Le centre pour un battement de cœur profond, le bord pour une frappe légère. Régulier et ancrant.',
     ],
   },
   es: {
+    song: { listen: '▶ Escuchar', practice: '🎯 Practicar', stop: 'Detener', note: 'Nota', of: 'de', done: '¡Muy bien! Errores:', miss: 'Esa no: toca la lengüeta roja', pick: 'Kalimba: elige una canción para escuchar o practicar', nofit: 'Esta canción no cabe en la kalimba' },
     app: 'Instrumentos de yoga', prev: 'Instrumento anterior (< o ←)', next: 'Instrumento siguiente (> o →)', start: 'Haz clic para abrir los instrumentos',
     play: 'Tocar', space: 'espacio', flow: 'Tocar en continuo', hush: 'Silencio', volume: 'Volumen', reverb: 'Reverb',
     keys: KEYS('o', 'cambiar', 'elegir', 'haz clic o toca el instrumento para tocarlo'), donate: '☕ Invítame a un café', more: 'Más idiomas',
@@ -218,7 +240,7 @@ const LANGS = {
       'Cuatro cuerdas, pulsadas lentamente en círculo, con un rico zumbido de armónicos.',
       'Cuentas que ruedan sobre un parche suenan como el oleaje. Toca a la izquierda o derecha para dirigir la ola.',
       'Gira el palo y cae la lluvia: un chaparrón suave que poco a poco se apaga.',
-      'Piano de pulgar con nueve lengüetas. Toca una lengüeta, o deja vagar una melodía tranquila.',
+      'Piano de pulgar con 17 lengüetas en do. Toca una lengüeta, deja vagar una melodía tranquila o practica una canción de la Song Library.',
       'El centro para un latido profundo, el borde para un toque ligero. Constante y enraizante.',
     ],
   },
@@ -362,9 +384,19 @@ function pluck(v, f, t, force) {
 const GONG = [1, 1.51, 2.03, 2.48, 2.97, 3.61, 4.27, 5.12, 6.03, 7.21, 8.63, 10.4];
 const KOSHI = [440, 523.25, 659.25, 880, 987.77, 1046.5, 1318.51, 1975.53];
 const TANPURA = [98, 130.81, 130.81, 65.41];                     // Pa, Sa, Sa, lage Sa
-const KALIMBA = [261.63, 293.66, 329.63, 392, 440, 523.25, 587.33, 659.25, 783.99];
-const TINES = [7, 5, 3, 1, 0, 2, 4, 6, 8];                       // toon per tong, van links naar rechts
-let kalPos = 4, lastTine = 0;
+// Kalimba met 17 tongen in C, zoals de gangbare 17-key kalimba: laag in het midden, afwisselend links en rechts omhoog
+const KAL_NOTES = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5', 'F5', 'G5', 'A5', 'B5', 'C6', 'D6', 'E6'];
+const KAL_MIDI = KAL_NOTES.map(n => 12 * (+n[1] + 1) + { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[n[0]]);
+const KALIMBA = KAL_MIDI.map(m => 440 * Math.pow(2, (m - 69) / 12));
+const TINES = [15, 13, 11, 9, 7, 5, 3, 1, 0, 2, 4, 6, 8, 10, 12, 14, 16]; // toon per tong, van links naar rechts
+const KAL_PENT = [0, 1, 2, 4, 5, 7, 8, 9, 11, 12, 14, 15, 16];             // vanzelf doorspelen: pentatonisch, klinkt altijd mooi
+let kalPos = 4, lastTine = 0, kalTarget = -1, kalNext = -1;
+function kalTone(i, force) {
+  lastTine = i;
+  const v = mkVoice(4), t = ctx.currentTime, f = KALIMBA[i];
+  tone(v, f, t, .3 * force, .003, .45); tone(v, f * 2, t, .06 * force, .003, .25); tone(v, f * 5.4, t, .07 * force, .002, .03);
+  burst(v, t, .012, .05 * force, 'bandpass', 3000, 1);
+}
 
 const INSTR = [
   { id: 'gong', ring: 14,
@@ -524,21 +556,21 @@ const INSTR = [
     } },
   { id: 'kalimba', ring: 1.6, floor: 88,
     play(x, y, force) {
-      let i;
-      if (x === null) { kalPos = clamp(kalPos + [-2, -1, 1, 2][Math.floor(Math.random() * 4)], 0, 8); i = kalPos; }
-      else i = kalPos = TINES[clamp(Math.round((x * 100 + 44) / 11), 0, 8)];
-      lastTine = i;
-      const v = mkVoice(4), t = ctx.currentTime, f = KALIMBA[i];
-      tone(v, f, t, .3 * force, .003, .45); tone(v, f * 2, t, .06 * force, .003, .25); tone(v, f * 5.4, t, .07 * force, .002, .03);
-      burst(v, t, .012, .05 * force, 'bandpass', 3000, 1);
+      if (x === null) { kalPos = clamp(kalPos + [-2, -1, 1, 2][Math.floor(Math.random() * 4)], 0, KAL_PENT.length - 1); kalTone(KAL_PENT[kalPos], force); return; }
+      const i = TINES[clamp(Math.round((x * 100 + 48) / 6), 0, 16)];
+      kalTone(i, force);
+      songHit(i);
     },
     flow: () => [null, 0, rnd(.5, .85), [.3, .6, .6, .9][Math.floor(Math.random() * 4)]],
     draw(e, t) {
       rr(-56, -76, 112, 152, 16, G(['#bd7d3c', '#8f5a2a', '#6b3f1c'], 0, -76, 0, 76));
-      ell(0, 36, 17, 17, '#1d1209'); rr(-49, -56, 98, 6, 2, '#cfd3d6');
+      ell(0, 36, 17, 17, '#1d1209'); rr(-53, -56, 106, 6, 2, '#cfd3d6');
       TINES.forEach((i, p) => {
-        const x = -44 + p * 11, len = 92 - i * 6, on = i === lastTine ? Math.min(1, e) : 0;
-        path([[x, -66], [x + Math.sin(t * 70) * on * 1.6, -66 + len]], on > .05 ? `rgb(${226 + on * 20},${214 - on * 20},${190 - on * 80})` : '#d5dade', 7);
+        const x = -48 + p * 6, len = 92 - i * 3, on = i === lastTine ? Math.min(1, e) : 0;
+        // Rood = hier tikken, zachtrood = de noot daarna
+        const col = i === kalTarget ? `rgba(255,70,70,${.75 + Math.sin(t * 6) * .25})` : i === kalNext ? '#f2a08e'
+          : on > .05 ? `rgb(${226 + on * 20},${214 - on * 20},${190 - on * 80})` : '#d5dade';
+        path([[x, -66], [x + Math.sin(t * 70) * on * 1.6, -66 + len]], col, 4.5);
       });
     } },
   { id: 'drum', ring: 1.1,
@@ -651,6 +683,7 @@ function showInfo() {
   descEl.textContent = t.desc[i];
   [...dotsEl.children].forEach((d, k) => d.classList.toggle('on', k === i));
   store.set('instr', i);
+  if (typeof songBarVisible === 'function') songBarVisible();
 }
 
 // Eerste keer: taal van de browser als we die hebben, anders Engels
@@ -670,6 +703,122 @@ function applyLang() {
   [...dotsEl.children].forEach((d, k) => { d.title = `${k + 1}. ${t.name[k]}`; });
   langEl.value = lang;
   showInfo();
+  songLabels();
+}
+
+// ---------- Liedjes uit Song Library (songs.js) op de kalimba ----------
+const LIB = window.SONG_LIBRARY || null;
+const KAL = INSTR.findIndex(x => x.id === 'kalimba');
+const SONGS = LIB ? LIB.songs.map(([id, cat, bpm, str]) => {
+  const items = str.split(' ').map(tok => { const [n, d] = tok.split(':'); return { n, rest: n === 'R', beats: d ? +d : 1 }; });
+  return { id, cat, bpm, items, notes: items.filter(x => !x.rest) };
+}) : [];
+const songName = (id) => (LIB.names[lang] || {})[id] || LIB.names.en[id];
+const noteMidi = (n) => { const m = n.match(/^([A-G])(#|b)?(\d)$/); return 12 * (+m[3] + 1) + { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0); };
+// Verschuif het liedje zodat alle noten op de kalimba liggen; eerst hele octaven (zelfde toonsoort)
+function kalSlots(sg) {
+  const shifts = [0, 12, -12, 24];
+  for (let d = 1; d < 12; d++) shifts.push(d, -d, d + 12, -d + 12);
+  for (const sh of shifts) {
+    const slots = sg.notes.map(x => KAL_MIDI.indexOf(noteMidi(x.n) + sh));
+    if (slots.every(k => k >= 0)) return slots;
+  }
+  return null;
+}
+const songState = { mode: 'idle', song: null, slots: [], pos: 0, misses: 0, timers: [] };
+const sEl = (id) => document.getElementById(id);
+function songStatus(text, cls) { sEl('songStatus').textContent = text; sEl('songStatus').className = cls || ''; }
+function songMark() {
+  const live = songState.mode !== 'idle';
+  kalTarget = live ? songState.slots[songState.pos] : -1;
+  kalNext = live && songState.mode === 'practice' && songState.pos + 1 < songState.slots.length ? songState.slots[songState.pos + 1] : -1;
+}
+function songButtons() {
+  const t = LANGS[lang].song;
+  sEl('songListen').textContent = t.listen;
+  sEl('songPractice').textContent = t.practice;
+  sEl('songStop').title = t.stop;
+  sEl('songListen').classList.toggle('on', songState.mode === 'listen');
+  sEl('songPractice').classList.toggle('on', songState.mode === 'practice');
+}
+function songStop(quiet) {
+  songState.timers.forEach(clearTimeout); songState.timers = [];
+  songState.mode = 'idle';
+  songMark(); songButtons();
+  if (!quiet) songStatus(LANGS[lang].song.pick);
+}
+function songProgress() {
+  const t = LANGS[lang].song;
+  songStatus(`${t.note} ${Math.min(songState.pos + 1, songState.slots.length)} ${t.of} ${songState.slots.length}`);
+}
+function songPrepare() {
+  const sg = SONGS[+sEl('songSel').value];
+  const slots = sg && kalSlots(sg);
+  if (!slots) { songStatus(LANGS[lang].song.nofit, 'bad'); return false; }
+  Object.assign(songState, { song: sg, slots, pos: 0, misses: 0 });
+  return true;
+}
+function songPractice() {
+  unlock(); songStop(true);
+  if (!songPrepare()) return;
+  songState.mode = 'practice';
+  songMark(); songButtons(); songProgress();
+}
+function songListen() {
+  unlock(); songStop(true);
+  if (!songPrepare()) return;
+  songState.mode = 'listen';
+  songMark(); songButtons(); songProgress();
+  const beat = 60 / songState.song.bpm * 1000;
+  let at = 300, k = 0;
+  songState.song.items.forEach(x => {
+    if (!x.rest) {
+      const n = k++;
+      songState.timers.push(setTimeout(() => {
+        songState.pos = n; songMark(); songProgress();
+        kalTone(songState.slots[n], .8);
+        energy[KAL] = Math.min(1.25, energy[KAL] + .7);
+      }, at));
+    }
+    at += x.beats * beat;
+  });
+  songState.timers.push(setTimeout(() => songStop(), at + 400));
+}
+// Elke tik op een tong komt hier langs tijdens het oefenen
+function songHit(i) {
+  if (songState.mode !== 'practice') return;
+  if (i === songState.slots[songState.pos]) {
+    songState.pos++;
+    if (songState.pos >= songState.slots.length) {
+      const m = songState.misses;
+      songStop(true);
+      songStatus(`${LANGS[lang].song.done} ${m}`, 'good');
+      return;
+    }
+    songMark(); songProgress();
+  } else {
+    songState.misses++;
+    songStatus(LANGS[lang].song.miss, 'bad');
+  }
+}
+function songLabels() {
+  if (!LIB) return;
+  const sel = sEl('songSel'), v = sel.value || store.get('song', 0);
+  sel.innerHTML = '';
+  LIB.cats.forEach(cat => {
+    const g = document.createElement('optgroup');
+    g.label = (LIB.catNames[lang] || LIB.catNames.en)[cat];
+    SONGS.forEach((sg, i) => { if (sg.cat === cat && kalSlots(sg)) g.appendChild(new Option('🎵 ' + songName(sg.id), i)); });
+    if (g.children.length) sel.appendChild(g);
+  });
+  sel.value = v;
+  songButtons();
+  if (songState.mode === 'idle') songStatus(LANGS[lang].song.pick);
+}
+// De balk is er alleen bij de kalimba
+function songBarVisible() {
+  sEl('songBar').hidden = !LIB || current() !== KAL;
+  if (current() !== KAL && songState.mode !== 'idle') songStop();
 }
 
 // ---------- Tekenlus ----------
@@ -749,6 +898,7 @@ cv.addEventListener('pointerdown', (ev) => {
 
 document.addEventListener('keydown', (ev) => {
   if ((ev.target.tagName === 'INPUT' || ev.target.tagName === 'SELECT') && ev.key.startsWith('Arrow')) return;
+  if (ev.key === ' ' && ev.target.tagName === 'BUTTON') ev.target.blur();
   const k = ev.key;
   if (k === 'ArrowLeft' || k === '<' || k === ',') go(-1);
   else if (k === 'ArrowRight' || k === '>' || k === '.') go(1);
@@ -760,10 +910,26 @@ document.addEventListener('keydown', (ev) => {
   ev.preventDefault();
 });
 
+sEl('songSel').onchange = () => { store.set('song', +sEl('songSel').value); songStop(); sEl('songSel').blur(); };
+sEl('songListen').onclick = songListen;
+sEl('songPractice').onclick = songPractice;
+sEl('songStop').onclick = () => songStop();
+
 window.addEventListener('resize', resize);
 resize();
 applyLang();
 requestAnimationFrame(frame);
+
+// Openen vanuit Song Library: index.html?song=<id>&mode=practice|listen opent de kalimba met dat liedje
+window.openSong = function (id, mode) {
+  const i = SONGS.findIndex(sg => sg.id === id);
+  if (i < 0 || KAL < 0) return;
+  if (current() !== KAL) jump(KAL);
+  sEl('songSel').value = i; store.set('song', i);
+  if (mode === 'listen') songListen(); else songPractice();
+};
+const wanted = new URLSearchParams(location.search);
+if (wanted.get('song')) openSong(wanted.get('song'), wanted.get('mode'));
 </script>
 </body>
 </html>
