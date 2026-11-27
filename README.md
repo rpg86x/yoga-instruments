@@ -6,6 +6,14 @@ A calm, offline app with nine instruments used in yoga and meditation, for Windo
 
 ![Yoga Instruments](logo.png)
 
+## Phone or tablet?
+
+One app for phones and tablets: the same APK installs on both and adapts to the screen by itself.
+
+- **Phone:** one instrument per screen, swipe with ‹ ›; everything fits without scrolling.
+- **Tablet:** the same app, larger - nice as a session instrument next to your mat.
+
+
 ## Instruments
 
 | # | Instrument | Used for |
