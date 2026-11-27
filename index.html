@@ -135,7 +135,7 @@
 
 <footer>
   <span class="keys" data-t="keys"></span>
-  <span><a href="https://urbantechmonk.gumroad.com/coffee" target="_blank" rel="noopener" data-t="donate"></a> · <span data-t="app"></span> 1.3</span>
+  <span><a href="https://urbantechmonk.gumroad.com/coffee" target="_blank" rel="noopener" data-t="donate"></a> · <span data-t="app"></span> 1.4</span>
 </footer>
 
 <script src="songs.js"></script>
@@ -258,9 +258,10 @@ const voices = [];          // klinkende klanken, oudste eerst
 const rnd = (a, b) => a + Math.random() * (b - a);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
+const ANDROID = /Android/i.test(navigator.userAgent), LEAD = ANDROID ? .02 : 0; // 1.4: Android WebView haperde (buffer-underruns): grotere buffer, kortere galm, noten 20 ms vooruit
 function initAudio() {
   if (ctx) return;
-  ctx = new AudioContext();
+  ctx = new AudioContext({ latencyHint: ANDROID ? 'playback' : 'interactive' });
   master = ctx.createGain();
   const comp = ctx.createDynamicsCompressor();
   comp.threshold.value = -10; comp.ratio.value = 4;
@@ -268,7 +269,7 @@ function initAudio() {
   bus = ctx.createGain();
   const dry = ctx.createGain(); dry.gain.value = .8;
   bus.connect(dry).connect(master);
-  const conv = ctx.createConvolver(); conv.buffer = impulse(4.5);
+  const conv = ctx.createConvolver(); conv.buffer = impulse(ANDROID ? 2.5 : 4.5);
   wet = ctx.createGain();
   bus.connect(conv).connect(wet).connect(master);
   noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
@@ -393,7 +394,7 @@ const KAL_PENT = [0, 1, 2, 4, 5, 7, 8, 9, 11, 12, 14, 15, 16];             // va
 let kalPos = 4, lastTine = 0, kalTarget = -1, kalNext = -1;
 function kalTone(i, force) {
   lastTine = i;
-  const v = mkVoice(4), t = ctx.currentTime, f = KALIMBA[i];
+  const v = mkVoice(4), t = ctx.currentTime + LEAD, f = KALIMBA[i];
   tone(v, f, t, .3 * force, .003, .45); tone(v, f * 2, t, .06 * force, .003, .25); tone(v, f * 5.4, t, .07 * force, .002, .03);
   burst(v, t, .012, .05 * force, 'bandpass', 3000, 1);
 }
@@ -402,7 +403,7 @@ const INSTR = [
   { id: 'gong', ring: 14,
     play(x, y, force) {
       const edge = x === null ? .3 : clamp(Math.hypot(x, y) / .68, 0, 1);
-      const v = mkVoice(24), t = ctx.currentTime, f0 = 62;
+      const v = mkVoice(24), t = ctx.currentTime + LEAD, f0 = 62;
       GONG.forEach((r, k) => {
         const bloom = k ? .05 + k * .09 * (1 + edge) : .01;          // hoge boventonen zwellen later aan
         const amp = force * .26 / (1 + k * .55) * (k ? .5 + edge * .9 : 1);
@@ -423,7 +424,7 @@ const INSTR = [
     } },
   { id: 'tingsha', ring: 5,
     play(x, y, force) {
-      const v = mkVoice(10), t = ctx.currentTime, f = 2637;
+      const v = mkVoice(10), t = ctx.currentTime + LEAD, f = 2637;
       [[f, 0], [f * 1.012, .018]].forEach(([b, d]) =>
         [[1, 1], [2.71, .45], [5.15, .2]].forEach(([r, a], k) => tone(v, b * r, t + d, .15 * a * force, .002, 1.6 / (1 + k * .8))));
       burst(v, t, .03, .07 * force, 'highpass', 5000, .7);
@@ -444,7 +445,7 @@ const INSTR = [
   { id: 'koshi', ring: 4,
     play(x, y, force) {
       const i = x === null ? Math.floor(Math.random() * 8) : clamp(Math.floor((x + 1) * 4), 0, 7);
-      const v = mkVoice(8), t = ctx.currentTime, f = KOSHI[i];
+      const v = mkVoice(8), t = ctx.currentTime + LEAD, f = KOSHI[i];
       tone(v, f, t, .15 * force, .004, 1.1); tone(v, f * 1.003, t, .07 * force, .004, 1.3); tone(v, f * 2.76, t, .035 * force, .003, .3);
     },
     flow: () => [null, 0, rnd(.35, .85), .2 + Math.random() * Math.random() * 2.2],
@@ -462,7 +463,7 @@ const INSTR = [
     } },
   { id: 'shruti', ring: 6, floor: 66,
     play(x, y, force) {
-      const v = mkVoice(9), t = ctx.currentTime;
+      const v = mkVoice(9), t = ctx.currentTime + LEAD;
       const lp = ctx.createBiquadFilter(), g = ctx.createGain();
       lp.type = 'lowpass'; lp.frequency.value = 1700; lp.connect(v.out);
       g.gain.setValueAtTime(0, t); g.gain.setTargetAtTime(.2 * force, t, .5); g.gain.setTargetAtTime(0, t + 4.6, .7);
@@ -493,7 +494,7 @@ const INSTR = [
     } },
   { id: 'tanpura', ring: 5,
     play(x, y, force) {
-      const v = mkVoice(12), t = ctx.currentTime;
+      const v = mkVoice(12), t = ctx.currentTime + LEAD;
       if (x === null) TANPURA.forEach((f, k) => pluck(v, f, t + k * 1.05, force));
       else pluck(v, TANPURA[clamp(Math.floor((x + .4) / .8 * 4), 0, 3)], t, force);
     },
@@ -512,7 +513,7 @@ const INSTR = [
     } },
   { id: 'ocean', ring: 6,
     play(x, y, force) {
-      const v = mkVoice(9), t = ctx.currentTime, dir = x === null ? (Math.random() < .5 ? -1 : 1) : (x < 0 ? -1 : 1);
+      const v = mkVoice(9), t = ctx.currentTime + LEAD, dir = x === null ? (Math.random() < .5 ? -1 : 1) : (x < 0 ? -1 : 1);
       const pan = ctx.createStereoPanner();
       pan.pan.setValueAtTime(-dir * .7, t); pan.pan.linearRampToValueAtTime(dir * .7, t + 7); pan.connect(v.out);
       const a = noise(v, t, 8.2, 'lowpass', 300, .5, pan), b = noise(v, t, 8.2, 'bandpass', 5200, .7, pan);
@@ -539,7 +540,7 @@ const INSTR = [
       if (!rainBuf) rainBuf = makeRain();
       const v = mkVoice(9), n = ctx.createBufferSource(), g = ctx.createGain();
       n.buffer = rainBuf; n.playbackRate.value = rnd(.85, 1.15); g.gain.value = .55 * force;
-      n.connect(g).connect(v.out); n.start(); v.nodes.push(n);
+      n.connect(g).connect(v.out); n.start(ctx.currentTime + LEAD); v.nodes.push(n);
     },
     flow: () => [0, 0, rnd(.7, 1), 6],
     draw(e, t) {
@@ -576,7 +577,7 @@ const INSTR = [
   { id: 'drum', ring: 1.1,
     play(x, y, force) {
       const edge = x === null ? 0 : clamp(Math.hypot(x, y) / .74, 0, 1), tak = edge > .6;
-      const v = mkVoice(3), t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain();
+      const v = mkVoice(3), t = ctx.currentTime + LEAD, o = ctx.createOscillator(), g = ctx.createGain();
       o.frequency.setValueAtTime(tak ? 330 : 150, t); o.frequency.exponentialRampToValueAtTime(tak ? 215 : 68, t + (tak ? .04 : .09));
       g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime((tak ? .32 : .7) * force, t + .003); g.gain.setTargetAtTime(0, t + .003, tak ? .07 : .26);
       o.connect(g).connect(v.out); o.start(t); o.stop(t + 2.5); v.nodes.push(o);

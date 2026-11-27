@@ -1,4 +1,4 @@
-# Yoga Instruments 1.3
+# Yoga Instruments 1.4
 
 A calm, offline app with nine instruments used in yoga and meditation, for Windows and any modern browser. Browse them with `<` and `>`, play them by clicking or tapping, or let them keep playing by themselves. Every sound is synthesized live with the Web Audio API, so there are no audio files and the app needs no internet.
 
@@ -80,3 +80,7 @@ MIT, see [LICENSE](LICENSE).
 ## What's new in 1.3
 
 - The kalimba gets the new songs from Song Library 1.6 (143 songs), including the calm **Icaro style (Amazon)** series.
+
+## What's new in 1.4
+
+- **Clean sound on Android:** some Android phones crackled because the WebView ran out of audio buffer. On Android the app now uses a larger audio buffer, a shorter reverb tail and schedules notes 20 ms ahead. Desktop is unchanged.
